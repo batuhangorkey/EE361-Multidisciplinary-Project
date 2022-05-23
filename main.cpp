@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 using namespace std::chrono;
 
@@ -11,7 +12,7 @@ using namespace std::chrono;
 #define SAMPLE_INTERVAL     10ms
 
 AnalogIn ain(PA_0);
-DigitalOut led1(LED1);
+DigitalOut led1(D9);
 InterruptIn but1(D6);
 Timer t;
 Ticker ticker;
@@ -20,15 +21,17 @@ BufferedSerial serial_port(PA_9, PA_10, BAUD_RATE);
 char read_buf[32] = {0};
 float write_buf = 0;
 int counter = 0;
-int s_size = 0;
+uint32_t s_size = 0;
 bool stop = false;
+int raw = -1;
+milliseconds sample_interval = SAMPLE_INTERVAL;
 
-void stop_sample()
+void on_but1_rise()
 {
     stop = true;
 }
 
-void sampling_led()
+void on_tick()
 {
     led1 = !led1;
 }
@@ -36,20 +39,19 @@ void sampling_led()
 int main()
 {
     printf("Online \n");
-    printf("Ref voltage: %d\n", (int) ain.get_reference_voltage());
-    but1.rise(&stop_sample);
+    but1.rise(&on_but1_rise);
     t.reset();
     led1 = 0;
     serial_port.set_format(8, BufferedSerial::None, 1);
     while (true) {
-        serial_port.read(&read_buf, sizeof(read_buf));
+        memset(read_buf, 0, 32);
+        serial_port.read(read_buf, sizeof(read_buf));
+        printf("%s\n", read_buf);
         if(read_buf[0] == 's')
         {
-            memset(read_buf, 0, sizeof(read_buf));
-            serial_port.read(&read_buf, sizeof(read_buf));
-            s_size = atoi(read_buf);
+            serial_port.read(&s_size, 4);
             printf("Sampling %d Points...\n", s_size);
-            ticker.attach(&sampling_led, 500ms);
+            ticker.attach(&on_tick, 500ms);
             t.start();
             while(counter++ < s_size)
             {
@@ -77,24 +79,34 @@ int main()
             counter = 0;
         }
         else if(read_buf[0] == 'r')
-        {
+        {   
+            printf("Waiting\n");
+            uint32_t buf = 0;
+            sample_interval = 10ms;
+            serial_port.read(&buf, 4);
+            printf("%d\n", buf);
+            sample_interval = milliseconds(buf);
+            sample_interval = sample_interval < 10ms ? 10ms : sample_interval;
+            printf("Sample rate: %lld Hz\n", 1000 / sample_interval.count());
+            ticker.attach(&on_tick, 500ms);
             stop = false;
-            while(counter++ < 30000)
+            while(true)
             {
-                int raw = -1;
                 if (stop)
                 {
-                    printf("Value: %d\n", raw);
+                    raw = -1;
                     serial_port.write(&raw, sizeof(raw));
+                    ticker.detach();
+                    printf("Value: %d\n", raw);
                     printf("Stopped\n");
                     break;
                 }
                 raw = ain.read_u16();
                 serial_port.write(&raw, sizeof(raw));
                 printf("Value: %d\n", raw);
-                ThisThread::sleep_for(500ms);
+                ThisThread::sleep_for(sample_interval);
             }
-            counter = 0;
+            led1 = 0;
         }
         ThisThread::sleep_for(1s);
     }
