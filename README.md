@@ -1,4 +1,4 @@
-# EE361 Multidisciplinary Project
+# EE361 - Digital Signal Processing - Multidisciplinary Project
 ### About
 PH Probe sampling and transmitting data using STM32 Nucleo-L432KC analog-to-digital converter and CP2102 USB UART module
 Graphing and Low-Pass Filtering done on Python using libraries: serial, matplotlib, numpy, scipy
