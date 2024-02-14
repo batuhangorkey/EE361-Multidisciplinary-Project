@@ -1,7 +1,10 @@
-# EE361 - Digital Signal Processing - Multidisciplinary Project
+# Yeditepe University - 2021 
+# EE 361 - Digital Signal Processing
+## Multidisciplinary Project
 ### About
-PH Probe sampling and transmitting data using STM32 Nucleo-L432KC analog-to-digital converter and CP2102 USB UART module
-Graphing and Low-Pass Filtering done on Python using libraries: serial, matplotlib, numpy, scipy
+- PH Probe sampling and transmitting data using STM32 Nucleo-L432KC analog-to-digital converter
+- CP2102 USB UART module
+- Graphing and Low-Pass Filtering done on Python using libraries: serial, matplotlib, numpy, scipy
 #### Nucleo L432KC
 Controller awaits 'r' character from serial port. In a new line it reads sampling interval integer in milliseconds format. After receiving, controller starts converting voltage on A0 pin to a integer value which is transmitted to the serial port of PC through the UART module with the specified sampling interval until the interrupt button is pressed. Interrupt button sends -1 value to the serial port to let Python code know that sampling is stopped.
 #### Python
